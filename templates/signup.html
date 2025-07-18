@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="fixed inset-0 -z-10 animate-gradient-bg pointer-events-none"></div>
+<div class="flex items-center justify-center min-h-screen py-8 animate-fade-in">
+    <div class="relative w-full max-w-md bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl border border-white/40 dark:border-gray-700 rounded-3xl shadow-2xl px-8 py-12 flex flex-col items-center animate-fade-in-up">
+        <!-- Animated Floating Icon -->
+        <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-accent shadow-2xl flex items-center justify-center animate-bounce drop-shadow-xl ring-4 ring-primary/20">
+            <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11a4 4 0 100-8 4 4 0 000 8z M16 21v-2a4 4 0 00-8 0v2"/></svg>
+        </div>
+        <h2 class="text-3xl font-extrabold mb-10 text-center mt-16 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-gradient-x">Create Account</h2>
+        <form action="{{ url_for('signup') }}" method="post" class="flex flex-col gap-7 w-full" x-data="{ show: false }">
+            <!-- Error/Success Message Area -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="mb-2 w-full">
+                {% for category, message in messages %}
+                <div class="px-4 py-2 rounded-lg text-center text-sm font-semibold animate-fade-in-up mb-2
+                    {% if category == 'success' %}bg-success/10 text-success border border-success/30{% elif category == 'error' %}bg-danger/10 text-danger border border-danger/30{% else %}bg-accent/10 text-accent border border-accent/30{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+            <!-- Floating Label Input: Username -->
+            <div class="relative">
+                <input type="text" name="username" id="username" required placeholder=" " class="peer px-5 py-4 rounded-xl border border-gray-300 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-lg shadow-sm w-full bg-opacity-80" />
+                <label for="username" class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300 text-base pointer-events-none transition-all duration-200 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-primary peer-focus:dark:text-accent peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:dark:text-gray-300">Username</label>
+            </div>
+            <!-- Floating Label Input: Email -->
+            <div class="relative">
+                <input type="email" name="email" id="email" required placeholder=" " class="peer px-5 py-4 rounded-xl border border-gray-300 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-lg shadow-sm w-full bg-opacity-80" />
+                <label for="email" class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300 text-base pointer-events-none transition-all duration-200 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-primary peer-focus:dark:text-accent peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:dark:text-gray-300">Email</label>
+            </div>
+            <!-- Floating Label Input: Password -->
+            <div class="relative">
+                <input :type="show ? 'text' : 'password'" name="password" id="password" required placeholder=" " class="peer px-5 py-4 rounded-xl border border-gray-300 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-lg shadow-sm w-full bg-opacity-80 pr-12" />
+                <label for="password" class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300 text-base pointer-events-none transition-all duration-200 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-primary peer-focus:dark:text-accent peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:dark:text-gray-300">Password</label>
+                <button type="button" @click="show = !show" tabindex="-1" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary dark:hover:text-accent transition-colors">
+                    <svg x-show="!show" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <svg x-show="show" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.269-2.943-9.543-7a9.956 9.956 0 012.293-3.95M9.88 9.88a3 3 0 104.24 4.24"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 01-6 0m9.543-3.95l-1.414 1.414M3.515 3.515l16.97 16.97"/></svg>
+                </button>
+            </div>
+            <button type="submit" class="bg-gradient-to-r from-primary to-accent text-white px-6 py-4 rounded-xl shadow-xl hover:from-accent hover:to-primary transition-all font-bold text-lg tracking-wide flex items-center justify-center gap-2 focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                Sign Up
+            </button>
+            <div class="flex items-center gap-2 my-2">
+                <div class="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
+                <span class="text-gray-400 text-sm">or</span>
+                <div class="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
+            </div>
+            <button type="button" class="flex items-center justify-center gap-2 w-full px-6 py-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 shadow hover:bg-primary/10 dark:hover:bg-accent/10 transition-all font-semibold text-gray-700 dark:text-gray-200">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21.35 11.1h-9.18v2.92h5.27c-.23 1.23-1.4 3.6-5.27 3.6-3.18 0-5.78-2.63-5.78-5.87s2.6-5.87 5.78-5.87c1.81 0 3.03.77 3.73 1.43l2.54-2.47C16.13 3.9 14.29 3 12 3 6.48 3 2 7.48 2 13s4.48 10 10 10c5.52 0 10-4.48 10-10 0-.68-.07-1.35-.2-1.9z"/></svg>
+                Sign up with Google
+            </button>
+        </form>
+        <div class="mt-8 text-center text-gray-500 dark:text-gray-400">
+            Already have an account?
+            <a href="{{ url_for('login') }}" class="text-primary hover:underline font-semibold">Login</a>
+        </div>
+    </div>
+</div>
+<style>
+@keyframes gradient-bg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-bg {
+  background: linear-gradient(120deg, #e0e7ff 0%, #f0fdfa 50%, #fef9c3 100%);
+  background-size: 200% 200%;
+  animation: gradient-bg 10s ease-in-out infinite;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="mb-6 animate-fade-in">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+        <div>
+            <h2 class="text-2xl font-semibold">Amazon Product Analysis</h2>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">
+                Analysis for {{ product_title or 'Amazon Product' }}
+                {% if asin %} (ASIN: {{ asin }}){% endif %}
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('amazon_analyzer') }}" class="bg-primary text-white px-4 py-2 rounded hover:bg-accent transition-all duration-200">
+                Analyze Another Product
+            </a>
+            <a href="{{ url_for('clear_session') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-all duration-200">
+                New Analysis
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-fade-in">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+        <div class="text-3xl font-bold text-primary mb-1">{{ total_reviews }}</div>
+        <div class="text-gray-500 dark:text-gray-300">Total Reviews</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+        <div class="text-3xl font-bold text-danger mb-1">{{ suspicious_count }}</div>
+        <div class="text-gray-500 dark:text-gray-300">Suspicious ({{ fake_percentage }}%)</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+        <div class="text-3xl font-bold text-success mb-1">{{ genuine_count }}</div>
+        <div class="text-gray-500 dark:text-gray-300">Genuine ({{ genuine_percentage }}%)</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+        <div class="text-3xl font-bold text-accent mb-1">{{ average_rating }}⭐</div>
+        <div class="text-gray-500 dark:text-gray-300">Avg Rating</div>
+    </div>
+</div>
+
+<!-- Sentiment Analysis Section -->
+{% if sentiment_data %}
+<div class="mb-8 animate-fade-in">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Sentiment Analysis</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600 mb-1">{{ sentiment_data.positive }}%</div>
+                <div class="text-gray-500 dark:text-gray-300">Positive</div>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ sentiment_data.positive }}%"></div>
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-yellow-600 mb-1">{{ sentiment_data.neutral }}%</div>
+                <div class="text-gray-500 dark:text-gray-300">Neutral</div>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-yellow-600 h-2 rounded-full" style="width: {{ sentiment_data.neutral }}%"></div>
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-600 mb-1">{{ sentiment_data.negative }}%</div>
+                <div class="text-gray-500 dark:text-gray-300">Negative</div>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-red-600 h-2 rounded-full" style="width: {{ sentiment_data.negative }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Reviews Table -->
+<div class="mb-8 animate-fade-in" x-data="reviewTable()">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <h3 class="text-lg font-semibold">Review Details</h3>
+                <div class="flex gap-2">
+                    <button class="filter-btn px-3 py-1 rounded transition-all" 
+                            :class="filter === 'all' ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700'" 
+                            @click="filter = 'all'; filterReviews()">
+                        All
+                    </button>
+                    <button class="filter-btn px-3 py-1 rounded transition-all" 
+                            :class="filter === 'fake' ? 'bg-danger text-white' : 'bg-red-200 dark:bg-danger/30'" 
+                            @click="filter = 'fake'; filterReviews()">
+                        Suspicious
+                    </button>
+                    <button class="filter-btn px-3 py-1 rounded transition-all" 
+                            :class="filter === 'genuine' ? 'bg-success text-white' : 'bg-green-200 dark:bg-success/30'" 
+                            @click="filter = 'genuine'; filterReviews()">
+                        Genuine
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Review</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rating</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Classification</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Confidence</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sentiment</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="reviews-table-body">
+                    {% for review in reviews %}
+                    <tr class="review-row hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" 
+                        data-classification="{{ review.prediction }}" 
+                        data-sentiment="{{ review.sentiment }}">
+                        <td class="px-6 py-4">
+                            <div class="max-w-md">
+                                <p class="text-sm text-gray-900 dark:text-gray-100 line-clamp-3">{{ review.text }}</p>
+                                {% if review.reviewer_name %}
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">by {{ review.reviewer_name }}</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ review.rating }}/5</span>
+                                <div class="ml-2 flex">
+                                    {% for i in range(5) %}
+                                        {% if i < review.rating %}
+                                            <span class="text-yellow-400">⭐</span>
+                                        {% else %}
+                                            <span class="text-gray-300">⭐</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if 'Fake' in review.prediction %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                    🚨 Suspicious
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    ✅ Genuine
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="h-2 rounded-full" 
+                                         style="width: {{ review.confidence }}%; background-color: {% if review.confidence > 80 %}#10B981{% elif review.confidence > 60 %}#F59E0B{% else %}#EF4444{% endif %};">
+                                    </div>
+                                </div>
+                                <span class="text-sm text-gray-900 dark:text-gray-100">{{ review.confidence }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if review.sentiment == 'positive' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    😊 Positive
+                                </span>
+                            {% elif review.sentiment == 'negative' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                    😞 Negative
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                                    😐 Neutral
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 animate-fade-in">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Review Distribution</h3>
+        <canvas id="reviewChart"></canvas>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Sentiment Distribution</h3>
+        <canvas id="sentimentChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Review filtering functionality
+function reviewTable() {
+    return {
+        filter: 'all',
+        
+        filterReviews() {
+            const rows = document.querySelectorAll('.review-row');
+            rows.forEach(row => {
+                const classification = row.dataset.classification;
+                const sentiment = row.dataset.sentiment;
+                
+                let show = true;
+                if (this.filter === 'fake' && !classification.includes('Fake')) {
+                    show = false;
+                } else if (this.filter === 'genuine' && classification.includes('Fake')) {
+                    show = false;
+                }
+                
+                row.style.display = show ? '' : 'none';
+            });
+        }
+    }
+}
+
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Review Distribution Chart
+    const reviewCtx = document.getElementById('reviewChart').getContext('2d');
+    new Chart(reviewCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Genuine', 'Suspicious'],
+            datasets: [{
+                data: [{{ genuine_count }}, {{ suspicious_count }}],
+                backgroundColor: ['#10b981', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Sentiment Distribution Chart
+    {% if sentiment_data %}
+    const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
+    new Chart(sentimentCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Positive', 'Neutral', 'Negative'],
+            datasets: [{
+                label: 'Percentage',
+                data: [{{ sentiment_data.positive }}, {{ sentiment_data.neutral }}, {{ sentiment_data.negative }}],
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-in { animation: fade-in 1s cubic-bezier(.4,0,.2,1) both; }
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
+
+{% endblock %} 

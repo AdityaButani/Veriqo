@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Animated Gradient Background -->
+<div class="fixed inset-0 -z-10 animate-gradient-bg pointer-events-none"></div>
+<!-- Hero Section -->
+<div class="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in">
+    <h1 class="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-gradient-x">Veriqo - Smart. Sharp. Verified.</h1>
+    <p class="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto animate-fade-in-slow">Upload your e-commerce review CSV and instantly detect suspicious reviews with AI-powered analysis, beautiful charts, and clear explanations.</p>
+    <!-- Drag & Drop Upload Card -->
+    <div class="relative group w-full max-w-md mx-auto" x-data="dragDropUpload()">
+        <div class="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-xl blur opacity-70 group-hover:opacity-100 transition duration-500 animate-tilt"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 flex flex-col items-center gap-4 z-10 animate-fade-in-up border-2 border-dashed" :class="{ 'border-primary': dragging, 'border-gray-300 dark:border-gray-700': !dragging }" @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false" @drop.prevent="handleDrop($event)">
+            <h2 class="text-2xl font-semibold mb-2">Upload Reviews CSV</h2>
+            <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data" class="w-full flex flex-col gap-4" x-data="{ uploading: false }" @submit="uploading = true">
+                <input type="file" name="file" accept=".csv" required class="block w-full text-gray-700 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all" x-ref="fileInput" @change="dragging = false">
+                <button type="submit" class="bg-primary text-white px-4 py-2 rounded shadow hover:bg-accent transition-all flex items-center justify-center gap-2 disabled:opacity-60" :disabled="uploading">
+                    <svg x-show="uploading" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                    <span x-text="uploading ? 'Analyzing...' : (dragging ? 'Drop to Upload' : 'Analyze Reviews')"></span>
+                </button>
+            </form>
+            <div x-show="dragging" class="absolute inset-0 bg-primary/10 dark:bg-accent/10 rounded-xl flex items-center justify-center text-primary dark:text-accent text-lg font-semibold pointer-events-none animate-fade-in-up">Drop your CSV here!</div>
+        </div>
+    </div>
+    <!-- Confetti canvas (hidden, triggered on upload) -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none -z-10"></canvas>
+    <!-- Fake Dashboard Preview -->
+    <div class="mt-12 w-full max-w-3xl mx-auto animate-fade-in-slow">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col gap-4 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-gray-200/30 to-gray-400/10 dark:from-gray-700/30 dark:to-gray-900/10 animate-shimmer z-10"></div>
+            <div class="flex gap-4 mb-4">
+                <div class="w-24 h-8 rounded bg-primary/20 animate-pulse"></div>
+                <div class="w-24 h-8 rounded bg-danger/20 animate-pulse"></div>
+                <div class="w-24 h-8 rounded bg-success/20 animate-pulse"></div>
+            </div>
+            <div class="h-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mb-4"></div>
+            <div class="h-8 w-1/2 rounded bg-accent/20 animate-pulse"></div>
+        </div>
+        <div class="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">Live dashboard preview</div>
+    </div>
+    <!-- Steps Section -->
+    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl animate-fade-in-slow">
+        <div class="flex flex-col items-center">
+            <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3 animate-bounce">
+                <span class="text-2xl font-bold text-primary">1</span>
+            </div>
+            <h3 class="font-semibold text-lg mb-1">Upload CSV</h3>
+            <p class="text-gray-500 dark:text-gray-400">Select your reviews file with columns like Review Text, User ID, Timestamp.</p>
+        </div>
+        <div class="flex flex-col items-center">
+            <div class="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mb-3 animate-bounce delay-200">
+                <span class="text-2xl font-bold text-accent">2</span>
+            </div>
+            <h3 class="font-semibold text-lg mb-1">AI Analysis</h3>
+            <p class="text-gray-500 dark:text-gray-400">Our ML model flags reviews as Genuine or Suspicious, with clear reasons.</p>
+        </div>
+        <div class="flex flex-col items-center">
+            <div class="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mb-3 animate-bounce delay-400">
+                <span class="text-2xl font-bold text-success">3</span>
+            </div>
+            <h3 class="font-semibold text-lg mb-1">Visual Dashboard</h3>
+            <p class="text-gray-500 dark:text-gray-400">See results in a beautiful dashboard with charts, filters, and download options.</p>
+        </div>
+    </div>
+    <!-- FAQ Section -->
+    <div class="mt-16 w-full max-w-2xl mx-auto animate-fade-in-slow">
+        <h2 class="text-xl font-bold mb-4">FAQ</h2>
+        <div x-data="{ open: null }" class="space-y-2">
+            <div class="rounded-lg bg-white dark:bg-gray-800 shadow p-4 cursor-pointer flex items-center justify-between" @click="open = open === 1 ? null : 1">
+                <span>What columns are required in the CSV?</span>
+                <svg :class="{ 'rotate-180': open === 1 }" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div x-show="open === 1" x-transition class="px-4 pb-2 text-gray-500 dark:text-gray-400">Your CSV should have columns: <b>Review Text</b>, <b>User ID</b>, <b>Timestamp</b>.</div>
+            <div class="rounded-lg bg-white dark:bg-gray-800 shadow p-4 cursor-pointer flex items-center justify-between" @click="open = open === 2 ? null : 2">
+                <span>Is my data stored?</span>
+                <svg :class="{ 'rotate-180': open === 2 }" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div x-show="open === 2" x-transition class="px-4 pb-2 text-gray-500 dark:text-gray-400">No, your data is processed in-memory and never stored on the server.</div>
+            <div class="rounded-lg bg-white dark:bg-gray-800 shadow p-4 cursor-pointer flex items-center justify-between" @click="open = open === 3 ? null : 3">
+                <span>How is a review flagged as suspicious?</span>
+                <svg :class="{ 'rotate-180': open === 3 }" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div x-show="open === 3" x-transition class="px-4 pb-2 text-gray-500 dark:text-gray-400">We use ML and pattern analysis (repetition, timing, sentiment) to flag reviews and provide a reason for each.</div>
+        </div>
+    </div>
+    <!-- Social/Contact Links -->
+    <div class="mt-12 flex justify-center gap-6 animate-fade-in-slow">
+        <a href="https://github.com/" target="_blank" class="text-gray-400 hover:text-primary transition-transform transform hover:scale-125"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.832.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.847-2.337 4.695-4.566 4.944.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.744 0 .267.18.578.688.48C19.138 20.2 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/></svg></a>
+        <a href="mailto:contact@example.com" class="text-gray-400 hover:text-accent transition-transform transform hover:scale-125"><svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 12H8m8 0a4 4 0 11-8 0 4 4 0 018 0zm0 0v1a4 4 0 01-8 0v-1m8 0V7a4 4 0 00-8 0v5"/></svg></a>
+    </div>
+    <!-- Scroll Down CTA -->
+    <div class="mt-8 flex justify-center animate-bounce">
+        <a href="#" onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}); return false;" class="inline-flex flex-col items-center text-primary dark:text-accent hover:text-accent">
+            <svg class="w-7 h-7 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            <span class="text-xs">See how it works</span>
+        </a>
+    </div>
+</div>
+<!-- How it helps section -->
+<div class="mt-20 max-w-5xl mx-auto px-4 animate-fade-in-slow">
+    <h2 class="text-2xl font-bold mb-6 text-center">How This System Helps You</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="flex flex-col items-center text-center">
+            <div class="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-success" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="font-semibold text-lg mb-1">Protects Your Platform</h3>
+            <p class="text-gray-500 dark:text-gray-400">Detects and flags fake reviews to maintain trust and credibility.</p>
+        </div>
+        <div class="flex flex-col items-center text-center">
+            <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/></svg>
+            </div>
+            <h3 class="font-semibold text-lg mb-1">Saves Time</h3>
+            <p class="text-gray-500 dark:text-gray-400">Automates review moderation so your team can focus on what matters.</p>
+        </div>
+        <div class="flex flex-col items-center text-center">
+            <div class="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01"/></svg>
+            </div>
+            <h3 class="font-semibold text-lg mb-1">Actionable Insights</h3>
+            <p class="text-gray-500 dark:text-gray-400">Provides clear reasons for each flagged review, so you can take action.</p>
+        </div>
+    </div>
+</div>
+<!-- Who should use this section -->
+<div class="mt-20 max-w-4xl mx-auto px-4 animate-fade-in-slow">
+    <h2 class="text-2xl font-bold mb-6 text-center">Who Should Use This?</h2>
+    <div class="flex flex-wrap justify-center gap-6">
+        <span class="bg-primary/10 text-primary px-4 py-2 rounded-full font-semibold">E-commerce Platforms</span>
+        <span class="bg-accent/10 text-accent px-4 py-2 rounded-full font-semibold">Marketplace Admins</span>
+        <span class="bg-success/10 text-success px-4 py-2 rounded-full font-semibold">Product Managers</span>
+        <span class="bg-danger/10 text-danger px-4 py-2 rounded-full font-semibold">Data Scientists</span>
+        <span class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-semibold">Hackathon Teams</span>
+    </div>
+</div>
+<!-- Why choose us section -->
+<div class="mt-20 max-w-5xl mx-auto px-4 animate-fade-in-slow">
+    <h2 class="text-2xl font-bold mb-6 text-center">Why Choose Us?</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2l4-4"/></svg>
+            </div>
+            <div>
+                <h4 class="font-semibold text-lg mb-1">Fast & Accurate</h4>
+                <p class="text-gray-500 dark:text-gray-400">Get results in seconds with proven ML models.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <svg class="w-7 h-7 text-success" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <div>
+                <h4 class="font-semibold text-lg mb-1">Privacy First</h4>
+                <p class="text-gray-500 dark:text-gray-400">Your data is never stored—everything is processed in-memory.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div>
+                <h4 class="font-semibold text-lg mb-1">Beautiful Dashboard</h4>
+                <p class="text-gray-500 dark:text-gray-400">Modern, interactive UI with charts and filters for easy review.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                <svg class="w-7 h-7 text-danger" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/></svg>
+            </div>
+            <div>
+                <h4 class="font-semibold text-lg mb-1">Open Source & Extensible</h4>
+                <p class="text-gray-500 dark:text-gray-400">Easily customize or extend for your own needs.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Call to Action -->
+<div class="mt-20 mb-12 flex flex-col items-center animate-fade-in-slow">
+    <h2 class="text-2xl font-bold mb-4">Ready to protect your platform?</h2>
+    <a href="#" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;" class="bg-primary text-white px-8 py-3 rounded-full shadow-lg hover:bg-accent transition-all text-lg font-semibold">Try It Now</a>
+    <p class="mt-2 text-gray-500 dark:text-gray-400">Upload your reviews and see the magic!</p>
+</div>
+<!-- Styles & Scripts -->
+<style>
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease-in-out infinite;
+}
+@keyframes tilt {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+.animate-tilt { animation: tilt 6s infinite linear alternate; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-in { animation: fade-in 1s cubic-bezier(.4,0,.2,1) both; }
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-in-up { animation: fade-in-up 1.2s cubic-bezier(.4,0,.2,1) both; }
+@keyframes fade-in-slow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in-slow { animation: fade-in-slow 2s cubic-bezier(.4,0,.2,1) both; }
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -150%; width: 150%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2.5s infinite;
+}
+@keyframes gradient-bg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-bg {
+  background: linear-gradient(120deg, #e0e7ff 0%, #f0fdfa 50%, #fef9c3 100%);
+  background-size: 200% 200%;
+  animation: gradient-bg 10s ease-in-out infinite;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+function dragDropUpload() {
+    return {
+        dragging: false,
+        handleDrop(e) {
+            this.dragging = false;
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                this.$refs.fileInput.files = files;
+                this.$refs.fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                // Optionally auto-submit the form here
+            }
+        }
+    }
+}
+// Confetti on successful upload (example: call this after upload)
+function launchConfetti() {
+    confetti({
+        particleCount: 120,
+        spread: 70,
+        origin: { y: 0.6 }
+    });
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 animate-fade-in">
+    <div>
+        <h2 class="text-2xl font-semibold">Review Analysis Dashboard</h2>
+        <p class="text-gray-600 dark:text-gray-400 text-sm">
+            Analysis of "{{ filename }}" - {{ timestamp }}
+            {% if has_more %}(Showing first 100 of {{ total_reviews }} reviews){% endif %}
+        </p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('download') }}" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 flex items-center gap-2 transition-all duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
+            Download Suspicious ({{ suspicious_count }})
+        </a>
+        <a href="{{ url_for('clear_session') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-all duration-200">
+            New Analysis
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
+        <span class="text-3xl font-bold text-primary">{{ total_reviews }}</span>
+        <span class="text-gray-500 dark:text-gray-300">Total Reviews</span>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
+        <span class="text-3xl font-bold text-danger">{{ suspicious_count }}</span>
+        <span class="text-gray-500 dark:text-gray-300">Suspicious ({{ fake_percentage }}%)</span>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
+        <span class="text-3xl font-bold text-success">{{ genuine_count }}</span>
+        <span class="text-gray-500 dark:text-gray-300">Genuine ({{ genuine_percentage }}%)</span>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
+        <span class="text-3xl font-bold text-accent">{{ average_confidence }}%</span>
+        <span class="text-gray-500 dark:text-gray-300">Avg. Confidence</span>
+    </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="mb-4 flex flex-col md:flex-row gap-4 items-center" x-data="reviewTable()">
+    <input type="text" placeholder="Search reviews..." 
+           class="w-full md:w-1/3 px-3 py-2 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary transition-all" 
+           x-model="search" 
+           @input="searchReviews()">
+    <div class="flex gap-2">
+        <button class="filter-btn px-3 py-1 rounded transition-all" 
+                :class="filter === 'all' ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700'" 
+                @click="setFilter('all')">
+            All ({{ total_reviews }})
+        </button>
+        <button class="filter-btn px-3 py-1 rounded transition-all" 
+                :class="filter === 'fake' ? 'bg-danger text-white' : 'bg-red-200 dark:bg-danger/30'" 
+                @click="setFilter('fake')">
+            Suspicious ({{ suspicious_count }})
+        </button>
+        <button class="filter-btn px-3 py-1 rounded transition-all" 
+                :class="filter === 'genuine' ? 'bg-success text-white' : 'bg-green-200 dark:bg-success/30'" 
+                @click="setFilter('genuine')">
+            Genuine ({{ genuine_count }})
+        </button>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="overflow-x-auto mb-8" x-data="reviewTable()">
+    <div x-show="loading" class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">Loading reviews...</p>
+    </div>
+    
+    <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow" x-show="!loading">
+        <thead>
+        <tr class="bg-gray-50 dark:bg-gray-700">
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Review Text</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Timestamp</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Prediction</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Confidence</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reason</th>
+        </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="review-table-body">
+            {% for result in results %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {{ result.user }}
+                </td>
+                <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
+                    <div class="truncate" title="{{ result.full_text }}">
+                        {{ result.text }}
+                    </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                    {{ result.timestamp }}
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    {% if 'Fake' in result.prediction %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                            🚨 {{ result.prediction }}
+                        </span>
+                    {% elif 'Genuine' in result.prediction %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            ✅ {{ result.prediction }}
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                            ❓ {{ result.prediction }}
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    <div class="flex items-center">
+                        <div class="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700 mr-2">
+                            <div class="h-2 rounded-full" 
+                                 style="width: {{ result.confidence }}%; background-color: {% if result.confidence > 80 %}#10B981{% elif result.confidence > 60 %}#F59E0B{% else %}#EF4444{% endif %};">
+                            </div>
+                        </div>
+                        <span class="text-xs">{{ result.confidence }}%</span>
+                    </div>
+                </td>
+                <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs">
+                    <div class="truncate" title="{{ result.reason }}">
+                        {{ result.reason }}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div x-show="currentReviews.length === 0 && !loading" class="text-center py-8 text-gray-400 dark:text-gray-500">
+        No reviews found matching your criteria!
+    </div>
+    
+    <!-- Pagination -->
+    <div x-show="totalPages > 1" class="flex justify-between items-center mt-4 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+            Showing <span x-text="((currentPage - 1) * perPage) + 1"></span> to 
+            <span x-text="Math.min(currentPage * perPage, totalResults)"></span> of 
+            <span x-text="totalResults"></span> results
+        </div>
+        <div class="flex space-x-2">
+            <button @click="previousPage()" 
+                    :disabled="currentPage === 1"
+                    :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
+                    class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm">
+                Previous
+            </button>
+            <button @click="nextPage()" 
+                    :disabled="currentPage === totalPages"
+                    :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
+                    class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm">
+                Next
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Review Classification</h3>
+        <canvas id="overviewChart"></canvas>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Confidence Distribution</h3>
+        <canvas id="confidenceChart"></canvas>
+    </div>
+</div>
+
+{% if timeline_data %}
+<div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6 animate-fade-in">
+    <h3 class="text-lg font-semibold mb-4">Timeline Analysis</h3>
+    <canvas id="timelineChart"></canvas>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Alpine.js table logic
+function reviewTable() {
+    return {
+        search: '',
+        filter: 'all',
+        currentReviews: {{ results | tojson }},
+        currentPage: 1,
+        perPage: 50,
+        totalResults: {{ total_reviews }},
+        totalPages: 1,
+        loading: false,
+        
+        init() {
+            this.updatePagination();
+        },
+        
+        setFilter(newFilter) {
+            this.filter = newFilter;
+            this.currentPage = 1;
+            this.loadReviews();
+        },
+        
+        searchReviews() {
+            this.currentPage = 1;
+            this.loadReviews();
+        },
+        
+        loadReviews() {
+            this.loading = true;
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                per_page: this.perPage,
+                filter: this.filter,
+                search: this.search
+            });
+            
+            fetch(`/api/reviews?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    this.currentReviews = data.reviews;
+                    this.totalResults = data.total;
+                    this.totalPages = data.total_pages;
+                    this.loading = false;
+                    this.updateTable();
+                })
+                .catch(error => {
+                    console.error('Error loading reviews:', error);
+                    this.loading = false;
+                });
+        },
+        
+        updateTable() {
+            const tbody = document.getElementById('review-table-body');
+            tbody.innerHTML = this.currentReviews.map(result => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                        ${result.user}
+                    </td>
+                    <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
+                        <div class="truncate" title="${result.full_text}">
+                            ${result.text}
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                        ${result.timestamp}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                        ${this.getPredictionBadge(result.prediction)}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <div class="flex items-center">
+                            <div class="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700 mr-2">
+                                <div class="h-2 rounded-full" 
+                                     style="width: ${result.confidence}%; background-color: ${this.getConfidenceColor(result.confidence)};">
+                                </div>
+                            </div>
+                            <span class="text-xs">${result.confidence}%</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs">
+                        <div class="truncate" title="${result.reason}">
+                            ${result.reason}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        },
+        
+        getPredictionBadge(prediction) {
+            if (prediction.includes('Fake')) {
+                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">🚨 ${prediction}</span>`;
+            } else if (prediction.includes('Genuine')) {
+                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✅ ${prediction}</span>`;
+            } else {
+                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">❓ ${prediction}</span>`;
+            }
+        },
+        
+        getConfidenceColor(confidence) {
+            if (confidence > 80) return '#10B981';
+            if (confidence > 60) return '#F59E0B';
+            return '#EF4444';
+        },
+        
+        updatePagination() {
+            this.totalPages = Math.ceil(this.totalResults / this.perPage);
+        },
+        
+        previousPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.loadReviews();
+            }
+        },
+        
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.loadReviews();
+            }
+        }
+    }
+}
+
+// Load and render charts
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/chart-data')
+        .then(response => response.json())
+        .then(data => {
+            // Overview Chart
+            const overviewCtx = document.getElementById('overviewChart').getContext('2d');
+            new Chart(overviewCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.overview.labels,
+                    datasets: [{
+                        data: data.overview.data,
+                        backgroundColor: data.overview.backgroundColor
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Confidence Distribution Chart
+            const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
+            new Chart(confidenceCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.confidence_distribution.labels,
+                    datasets: [{
+                        label: 'Number of Reviews',
+                        data: data.confidence_distribution.data,
+                        backgroundColor: '#3B82F6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Timeline Chart (if data available)
+            if (data.timeline.labels.length > 0) {
+                const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+                new Chart(timelineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.timeline.labels,
+                        datasets: [{
+                            label: 'Genuine Reviews',
+                            data: data.timeline.genuine_data,
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                        }, {
+                            label: 'Suspicious Reviews',
+                            data: data.timeline.fake_data,
+                            borderColor: '#EF4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error loading chart data:', error));
+});
+</script>
+
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-in { animation: fade-in 1s cubic-bezier(.4,0,.2,1) both; }
+</style>
+
+{% endblock %} 

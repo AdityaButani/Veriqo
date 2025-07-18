@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="text-center mb-8 animate-fade-in">
+        <h1 class="text-3xl font-bold mb-4">Amazon Product Review Analyzer</h1>
+        <p class="text-gray-600 dark:text-gray-400 text-lg">Enter an Amazon product URL or ASIN to analyze its reviews for authenticity</p>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8 animate-fade-in-up">
+        <form action="{{ url_for('analyze_amazon_product') }}" method="post" class="space-y-6" x-data="{ loading: false }" @submit="loading = true">
+            <div>
+                <label for="product_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Amazon Product URL or ASIN
+                </label>
+                <input type="text" 
+                       id="product_url" 
+                       name="product_url" 
+                       placeholder="https://www.amazon.com/dp/B08N5WRWNW or B08N5WRWNW"
+                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                       required>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="include_all_reviews" class="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary">
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Analyze all reviews (may take longer)</span>
+                </label>
+            </div>
+
+            <button type="submit" 
+                    class="w-full bg-primary text-white py-3 px-6 rounded-lg font-semibold hover:bg-accent transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
+                    :disabled="loading">
+                <svg x-show="loading" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                <span x-text="loading ? 'Analyzing...' : 'Analyze Reviews'"></span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Sample Products -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-slow">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="font-semibold text-lg mb-3">Try Sample Products</h3>
+            <div class="space-y-3">
+                <button onclick="fillSample('B08N5WRWNW')" class="w-full text-left p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                    <div class="font-medium">Echo Dot (4th Gen)</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">ASIN: B08N5WRWNW</div>
+                </button>
+                <button onclick="fillSample('B0B7BP6CJN')" class="w-full text-left p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                    <div class="font-medium">Fire TV Stick 4K Max</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">ASIN: B0B7BP6CJN</div>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="font-semibold text-lg mb-3">How It Works</h3>
+            <div class="space-y-3">
+                <div class="flex items-start gap-3">
+                    <span class="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                    <div>
+                        <div class="font-medium">Extract Reviews</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">We fetch real reviews from the product page</div>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="w-6 h-6 bg-accent text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                    <div>
+                        <div class="font-medium">AI Analysis</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Our ML model flags suspicious patterns</div>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="w-6 h-6 bg-success text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                    <div>
+                        <div class="font-medium">Visual Results</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Get insights with charts and detailed analysis</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 animate-fade-in-slow">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-200 mb-3">💡 Tips for Best Results</h3>
+        <ul class="space-y-2 text-blue-800 dark:text-blue-300 text-sm">
+            <li>• Use the full Amazon product URL for most accurate results</li>
+            <li>• Products with more reviews provide better analysis</li>
+            <li>• Check "analyze all reviews" for comprehensive analysis (slower but more thorough)</li>
+            <li>• Works best with English language reviews</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function fillSample(asin) {
+    document.getElementById('product_url').value = asin;
+}
+</script>
+
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-in { animation: fade-in 1s cubic-bezier(.4,0,.2,1) both; }
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-in-up { animation: fade-in-up 1.2s cubic-bezier(.4,0,.2,1) both; }
+
+@keyframes fade-in-slow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in-slow { animation: fade-in-slow 2s cubic-bezier(.4,0,.2,1) both; }
+</style>
+{% endblock %} 
