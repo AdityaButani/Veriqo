@@ -1,89 +1,510 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{ dark: localStorage.getItem('theme') === 'dark' }" x-bind:class="dark ? 'dark' : ''" x-init="$watch('dark', val => localStorage.setItem('theme', val ? 'dark' : 'light'))">
+<html lang="en" x-data="{ 
+    dark: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+    sidebarOpen: false,
+    notifications: []
+}" 
+x-bind:class="dark ? 'dark' : ''" 
+x-init="$watch('dark', val => localStorage.setItem('theme', val ? 'dark' : 'light'))">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Veriqo</title>
+    <title>{% block title %}AI Analysis Platform{% endblock %}</title>
+    
+    <!-- Alpine.js -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    
+    <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Framer Motion-like animations -->
+    <script src="https://cdn.jsdelivr.net/npm/@motionone/solid@latest/dist/motionone.umd.js"></script>
+    
     <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              primary: '#2563eb',
-              accent: '#f59e42',
-              success: '#22c55e',
-              warning: '#facc15',
-              danger: '#ef4444',
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        // Modern gradient-friendly color palette
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            200: '#f5d0fe',
+                            300: '#f0abfc',
+                            400: '#e879f9',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                            700: '#a21caf',
+                            800: '#86198f',
+                            900: '#701a75',
+                        },
+                        success: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        warning: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        },
+                        danger: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                        },
+                        // Neutral colors for gradients
+                        neutral: {
+                            50: '#fafafa',
+                            100: '#f5f5f5',
+                            200: '#e5e5e5',
+                            300: '#d4d4d4',
+                            400: '#a3a3a3',
+                            500: '#737373',
+                            600: '#525252',
+                            700: '#404040',
+                            800: '#262626',
+                            900: '#171717',
+                            950: '#0a0a0a',
+                        }
+                    },
+                    animation: {
+                        'gradient-x': 'gradient-x 3s ease infinite',
+                        'gradient-y': 'gradient-y 3s ease infinite',
+                        'gradient-xy': 'gradient-xy 3s ease infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'shimmer': 'shimmer 2.5s linear infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                        'fade-in': 'fadeIn 0.6s ease-out',
+                        'fade-in-up': 'fadeInUp 0.8s ease-out',
+                        'slide-in-right': 'slideInRight 0.6s ease-out',
+                        'scale-in': 'scaleIn 0.4s ease-out',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': { 'background-position': '0% 50%' },
+                            '50%': { 'background-position': '100% 50%' },
+                        },
+                        'gradient-y': {
+                            '0%, 100%': { 'background-position': '50% 0%' },
+                            '50%': { 'background-position': '50% 100%' },
+                        },
+                        'gradient-xy': {
+                            '0%, 100%': { 'background-position': '0% 0%' },
+                            '25%': { 'background-position': '100% 0%' },
+                            '50%': { 'background-position': '100% 100%' },
+                            '75%': { 'background-position': '0% 100%' },
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        'glow': {
+                            '0%': { 'box-shadow': '0 0 20px rgba(59, 130, 246, 0.5)' },
+                            '100%': { 'box-shadow': '0 0 30px rgba(59, 130, 246, 0.8)' },
+                        },
+                        'shimmer': {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(100%)' },
+                        },
+                        'fadeIn': {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        'fadeInUp': {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        'slideInRight': {
+                            '0%': { opacity: '0', transform: 'translateX(20px)' },
+                            '100%': { opacity: '1', transform: 'translateX(0)' },
+                        },
+                        'scaleIn': {
+                            '0%': { opacity: '0', transform: 'scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
             }
-          }
         }
-      }
     </script>
+    
     <style>
-      .fade-enter { opacity: 0; transform: translateY(10px); }
-      .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.5s; }
-      .fade-leave { opacity: 1; }
-      .fade-leave-active { opacity: 0; transition: opacity 0.3s; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+        }
+        
+        /* Smooth transitions */
+        * {
+            transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-xy 3s ease infinite;
+        }
+        
+        /* Glass effect without blur */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .glass {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Floating animation */
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        /* Gradient backgrounds */
+        .bg-gradient-radial {
+            background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+        }
+        
+        .bg-gradient-mesh {
+            background: 
+                radial-gradient(at 40% 20%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgba(236, 72, 153, 0.1) 0px, transparent 50%),
+                radial-gradient(at 80% 50%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 80% 100%, rgba(236, 72, 153, 0.1) 0px, transparent 50%),
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+        }
+        
+        /* Loading states */
+        .loading-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        /* Interactive elements */
+        .interactive {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .interactive:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark .interactive:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Focus states */
+        .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Notification animations */
+        .notification-enter {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        
+        .notification-enter-active {
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.3s ease-out;
+        }
+        
+        .notification-exit {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .notification-exit-active {
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease-in;
+        }
     </style>
+    
     {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors duration-300">
-    <nav class="sticky top-0 z-50 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg mb-8 transition-colors duration-300">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <a href="/" class="flex items-center gap-2 group">
-                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent shadow-lg animate-bounce">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
-                </span>
-                <span class="text-xl font-extrabold text-primary dark:text-accent group-hover:text-accent dark:group-hover:text-primary transition-colors animate-gradient-x bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Veriqo</span>
-            </a>
-            <!-- Navigation Menu -->
-            <div class="hidden md:flex items-center gap-6">
-                <a href="/" class="text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-accent transition-colors font-medium">CSV Analyzer</a>
-                <a href="{{ url_for('amazon_analyzer') }}" class="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-accent transition-colors font-medium">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v2a2 2 0 01-2 2H10a2 2 0 01-2-2V6m8 0H8"/></svg>
-                    Amazon Analyzer
-                </a>
-            </div>
-            <div class="flex items-center gap-4">
-                {% if session.get('user') %}
-                <div x-data="{ open: false }" class="relative">
-                    <button @click="open = !open" class="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 dark:bg-accent/10 text-primary dark:text-accent font-semibold hover:bg-primary/20 dark:hover:bg-accent/20 transition-all">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent text-white font-bold">{{ session['user'][0]|upper }}</span>
-                        <span class="hidden md:inline">{{ session['user'] }}</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded shadow-lg py-2 z-50">
-                        <form action="{{ url_for('logout') }}" method="post">
-                            <button type="submit" class="w-full text-left px-4 py-2 hover:bg-primary/10 dark:hover:bg-accent/10 transition-all">Logout</button>
-                        </form>
+
+<body class="bg-gradient-to-br from-neutral-50 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-800 min-h-screen text-neutral-900 dark:text-neutral-100 font-sans antialiased overflow-x-hidden">
+    <!-- Animated background mesh -->
+    <div class="fixed inset-0 bg-gradient-mesh opacity-30 dark:opacity-20 pointer-events-none -z-10"></div>
+    
+    <!-- Sidebar Navigation -->
+    <div x-show="sidebarOpen" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+         @click="sidebarOpen = false">
+    </div>
+    
+    <aside x-show="sidebarOpen" 
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="-translate-x-full"
+           x-transition:enter-end="translate-x-0"
+           x-transition:leave="transition ease-in duration-200"
+           x-transition:leave-start="translate-x-0"
+           x-transition:leave-end="-translate-x-full"
+           class="fixed left-0 top-0 h-full w-64 bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 z-50 lg:hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg">
+                        <i data-lucide="brain" class="w-6 h-6 text-white"></i>
                     </div>
+                    <span class="text-xl font-bold gradient-text">VeriQo</span>
                 </div>
-                {% else %}
-                <a href="{{ url_for('login') }}" class="px-4 py-2 rounded-full bg-primary text-white font-semibold shadow hover:bg-accent transition-all">Login</a>
-                <a href="{{ url_for('signup') }}" class="px-4 py-2 rounded-full bg-white dark:bg-gray-700 text-primary dark:text-accent font-semibold border border-primary dark:border-accent shadow hover:bg-primary hover:text-white dark:hover:bg-accent dark:hover:text-white transition-all">Sign Up</a>
-                {% endif %}
-                <button @click="dark = !dark" class="ml-2 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-primary hover:text-white transition-colors duration-300" :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'">
-                    <template x-if="!dark">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.66 5.66l-.71-.71M4.05 4.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    </template>
-                    <template x-if="dark">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>
-                    </template>
+                <button @click="sidebarOpen = false" class="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
+            </div>
+            
+            <nav class="space-y-2">
+                <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('amazon_analyzer') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span>Product Analysis</span>
+                </a>
+                <a href="{{ url_for('youtube_analyzer') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                    <i data-lucide="youtube" class="w-5 h-5"></i>
+                    <span>Content Analysis</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
+    
+    <!-- Main Navigation -->
+    <nav class="sticky top-0 z-30 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Mobile Menu -->
+                <div class="flex items-center gap-4">
+                    <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    
+                    <a href="/" class="flex items-center gap-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                            <i data-lucide="brain" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold gradient-text">VeriQo</span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden lg:flex items-center gap-8">
+                    <a href="/" class="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('amazon_analyzer') }}" class="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                        <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                        <span>Product Analysis</span>
+                    </a>
+                    <a href="{{ url_for('youtube_analyzer') }}" class="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                        <i data-lucide="youtube" class="w-4 h-4"></i>
+                        <span>Content Analysis</span>
+                    </a>
+                </div>
+                
+                <!-- User Menu and Theme Toggle -->
+                <div class="flex items-center gap-4">
+                    {% if session.get('user') %}
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" 
+                                class="flex items-center gap-3 px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-semibold">
+                                {{ session['user'][0]|upper }}
+                            </div>
+                            <span class="hidden md:block">{{ session['user'] }}</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </button>
+                        <div x-show="open" 
+                             @click.away="open = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 py-2 z-50">
+                            <form action="{{ url_for('logout') }}" method="post">
+                                <button type="submit" class="w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all flex items-center gap-2">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="px-4 py-2 rounded-xl bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-all flex items-center gap-2">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        <span>Login</span>
+                    </a>
+                    <a href="{{ url_for('signup') }}" class="px-4 py-2 rounded-xl border border-primary-500 text-primary-500 dark:text-primary-400 font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Sign Up</span>
+                    </a>
+                    {% endif %}
+                    
+                    <button @click="dark = !dark" 
+                            class="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all"
+                            :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'">
+                        <i data-lucide="sun" x-show="!dark" class="w-5 h-5"></i>
+                        <i data-lucide="moon" x-show="dark" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
-    <main class="container mx-auto px-4">
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {% block content %}{% endblock %}
     </main>
-    <div x-data="{ show: false, message: '', type: 'success' }" x-show="show" x-transition class="fixed bottom-6 right-6 z-50">
-        <div :class="type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-warning'" class="text-white px-4 py-2 rounded shadow-lg flex items-center gap-2">
-            <span x-text="message"></span>
-            <button @click="show = false" class="ml-2">&times;</button>
-        </div>
+    
+    <!-- Notification System -->
+    <div x-data="{ notifications: [] }" 
+         @notification.window="notifications.push($event.detail); setTimeout(() => notifications = notifications.filter(n => n.id !== $event.detail.id), 5000)"
+         class="fixed bottom-6 right-6 z-50 space-y-2">
+        <template x-for="notification in notifications" :key="notification.id">
+            <div x-show="true"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-full"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform translate-x-0"
+                 x-transition:leave-end="opacity-0 transform translate-x-full"
+                 :class="notification.type === 'success' ? 'bg-success-500' : notification.type === 'error' ? 'bg-danger-500' : 'bg-warning-500'"
+                 class="text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 min-w-80">
+                <i :data-lucide="notification.type === 'success' ? 'check-circle' : notification.type === 'error' ? 'x-circle' : 'alert-circle'" class="w-5 h-5 flex-shrink-0"></i>
+                <div class="flex-1">
+                    <div class="font-semibold" x-text="notification.title"></div>
+                    <div class="text-sm opacity-90" x-text="notification.message"></div>
+                </div>
+                <button @click="notifications = notifications.filter(n => n.id !== notification.id)" 
+                        class="p-1 rounded-lg hover:bg-white/20 transition-all">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </template>
     </div>
+    
+    <!-- Initialize Lucide Icons -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Notification helper function
+        window.showNotification = function(type, title, message) {
+            const event = new CustomEvent('notification', {
+                detail: {
+                    id: Date.now(),
+                    type: type,
+                    title: title,
+                    message: message
+                }
+            });
+            window.dispatchEvent(event);
+        };
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
 </body>
 </html> 

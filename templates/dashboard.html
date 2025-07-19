@@ -1,397 +1,576 @@
 {% extends 'base.html' %}
+
+{% block title %}Analysis Dashboard - VeriQo{% endblock %}
+
 {% block content %}
-<div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 animate-fade-in">
-    <div>
-        <h2 class="text-2xl font-semibold">Review Analysis Dashboard</h2>
-        <p class="text-gray-600 dark:text-gray-400 text-sm">
-            Analysis of "{{ filename }}" - {{ timestamp }}
-            {% if has_more %}(Showing first 100 of {{ total_reviews }} reviews){% endif %}
-        </p>
-    </div>
-    <div class="flex gap-2">
-        <a href="{{ url_for('download') }}" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 flex items-center gap-2 transition-all duration-200">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
-            Download Suspicious ({{ suspicious_count }})
-        </a>
-        <a href="{{ url_for('clear_session') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-all duration-200">
-            New Analysis
-        </a>
-    </div>
-</div>
-
-<!-- Stats Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
-        <span class="text-3xl font-bold text-primary">{{ total_reviews }}</span>
-        <span class="text-gray-500 dark:text-gray-300">Total Reviews</span>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
-        <span class="text-3xl font-bold text-danger">{{ suspicious_count }}</span>
-        <span class="text-gray-500 dark:text-gray-300">Suspicious ({{ fake_percentage }}%)</span>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
-        <span class="text-3xl font-bold text-success">{{ genuine_count }}</span>
-        <span class="text-gray-500 dark:text-gray-300">Genuine ({{ genuine_percentage }}%)</span>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col items-center animate-fade-in">
-        <span class="text-3xl font-bold text-accent">{{ average_confidence }}%</span>
-        <span class="text-gray-500 dark:text-gray-300">Avg. Confidence</span>
+<!-- Page Header -->
+<div class="mb-8 animate-fade-in">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl lg:text-4xl font-bold gradient-text mb-2">Analysis Dashboard</h1>
+            <p class="text-neutral-600 dark:text-neutral-400">
+                Analysis of "{{ filename }}" • {{ timestamp }}
+                {% if has_more %}<span class="text-sm">(Showing first 100 of {{ total_reviews }} reviews)</span>{% endif %}
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('download') }}" 
+               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-warning-500 to-warning-600 text-white font-semibold rounded-xl hover:from-warning-600 hover:to-warning-700 transition-all duration-300 shadow-lg hover:shadow-xl interactive">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>Export Results ({{ suspicious_count }})</span>
+            </a>
+            <a href="{{ url_for('clear_session') }}" 
+               class="inline-flex items-center gap-2 px-6 py-3 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-semibold rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all duration-300 interactive">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+                <span>New Analysis</span>
+            </a>
+        </div>
     </div>
 </div>
 
-<!-- Search & Filter Bar -->
-<div class="mb-4 flex flex-col md:flex-row gap-4 items-center" x-data="reviewTable()">
-    <input type="text" placeholder="Search reviews..." 
-           class="w-full md:w-1/3 px-3 py-2 rounded border border-gray-300 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary transition-all" 
-           x-model="search" 
-           @input="searchReviews()">
-    <div class="flex gap-2">
-        <button class="filter-btn px-3 py-1 rounded transition-all" 
-                :class="filter === 'all' ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700'" 
-                @click="setFilter('all')">
-            All ({{ total_reviews }})
-        </button>
-        <button class="filter-btn px-3 py-1 rounded transition-all" 
-                :class="filter === 'fake' ? 'bg-danger text-white' : 'bg-red-200 dark:bg-danger/30'" 
-                @click="setFilter('fake')">
-            Suspicious ({{ suspicious_count }})
-        </button>
-        <button class="filter-btn px-3 py-1 rounded transition-all" 
-                :class="filter === 'genuine' ? 'bg-success text-white' : 'bg-green-200 dark:bg-success/30'" 
-                @click="setFilter('genuine')">
-            Genuine ({{ genuine_count }})
-        </button>
+<!-- Key Metrics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Reviews Card -->
+    <div class="group relative bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 interactive animate-fade-in-up" style="animation-delay: 0.1s;">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-accent-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-1">Total Reviews</p>
+                <p class="text-3xl font-bold text-neutral-900 dark:text-white">{{ total_reviews }}</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg">
+                <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suspicious Reviews Card -->
+    <div class="group relative bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 interactive animate-fade-in-up" style="animation-delay: 0.2s;">
+        <div class="absolute inset-0 bg-gradient-to-br from-danger-500/5 to-red-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-1">Suspicious</p>
+                <p class="text-3xl font-bold text-danger-600 dark:text-danger-400">{{ suspicious_count }}</p>
+                <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ fake_percentage }}% of total</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-danger-500 to-red-600 flex items-center justify-center shadow-lg">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-white"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Genuine Reviews Card -->
+    <div class="group relative bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 interactive animate-fade-in-up" style="animation-delay: 0.3s;">
+        <div class="absolute inset-0 bg-gradient-to-br from-success-500/5 to-green-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-1">Genuine</p>
+                <p class="text-3xl font-bold text-success-600 dark:text-success-400">{{ genuine_count }}</p>
+                <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ genuine_percentage }}% of total</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-success-500 to-green-600 flex items-center justify-center shadow-lg">
+                <i data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Confidence Card -->
+    <div class="group relative bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 interactive animate-fade-in-up" style="animation-delay: 0.4s;">
+        <div class="absolute inset-0 bg-gradient-to-br from-accent-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-1">Avg. Confidence</p>
+                <p class="text-3xl font-bold text-accent-600 dark:text-accent-400">{{ average_confidence }}%</p>
+                <p class="text-sm text-neutral-500 dark:text-neutral-400">Model accuracy</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <i data-lucide="target" class="w-6 h-6 text-white"></i>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Table -->
-<div class="overflow-x-auto mb-8" x-data="reviewTable()">
-    <div x-show="loading" class="text-center py-8">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">Loading reviews...</p>
-    </div>
-    
-    <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow" x-show="!loading">
-        <thead>
-        <tr class="bg-gray-50 dark:bg-gray-700">
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Review Text</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Timestamp</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Prediction</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Confidence</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reason</th>
-        </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="review-table-body">
-            {% for result in results %}
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {{ result.user }}
-                </td>
-                <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
-                    <div class="truncate" title="{{ result.full_text }}">
-                        {{ result.text }}
-                    </div>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                    {{ result.timestamp }}
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap">
-                    {% if 'Fake' in result.prediction %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                            🚨 {{ result.prediction }}
-                        </span>
-                    {% elif 'Genuine' in result.prediction %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            ✅ {{ result.prediction }}
-                        </span>
-                    {% else %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-                            ❓ {{ result.prediction }}
-                        </span>
-                    {% endif %}
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    <div class="flex items-center">
-                        <div class="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700 mr-2">
-                            <div class="h-2 rounded-full" 
-                                 style="width: {{ result.confidence }}%; background-color: {% if result.confidence > 80 %}#10B981{% elif result.confidence > 60 %}#F59E0B{% else %}#EF4444{% endif %};">
+<!-- Trust Score & Recommendation Section -->
+<div class="mb-8 animate-fade-in-up" style="animation-delay: 0.5s;">
+    <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg p-8 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-accent-500/5 to-success-500/5 opacity-50"></div>
+        <div class="relative">
+            <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6 flex items-center gap-3">
+                <i data-lucide="shield-check" class="w-6 h-6 text-primary-500"></i>
+                Trust Score & Recommendation
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                <!-- Trust Score Badge -->
+                <div class="flex justify-center">
+                    <div class="relative">
+                        <div class="w-40 h-40 rounded-full {{ trust_quadrant.bg_color }} {{ trust_quadrant.border_color }} border-8 flex items-center justify-center shadow-2xl floating">
+                            <div class="text-center">
+                                <div class="text-4xl font-bold {{ trust_quadrant.text_color }} mb-1">{{ trust_quadrant.score }}%</div>
+                                <div class="text-sm {{ trust_quadrant.text_color }} font-medium">Trust Score</div>
                             </div>
                         </div>
-                        <span class="text-xs">{{ result.confidence }}%</span>
+                        <!-- Animated ring -->
+                        <div class="absolute inset-0 w-40 h-40 rounded-full border-2 border-primary-500/30 animate-ping"></div>
                     </div>
-                </td>
-                <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs">
-                    <div class="truncate" title="{{ result.reason }}">
-                        {{ result.reason }}
+                </div>
+                
+                <!-- Recommendation Details -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex items-center px-4 py-2 rounded-full text-lg font-bold {{ trust_quadrant.bg_color }} {{ trust_quadrant.text_color }} {{ trust_quadrant.border_color }} border-2 shadow-lg">
+                            {{ trust_quadrant.quadrant }}
+                        </span>
                     </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <div x-show="currentReviews.length === 0 && !loading" class="text-center py-8 text-gray-400 dark:text-gray-500">
-        No reviews found matching your criteria!
-    </div>
-    
-    <!-- Pagination -->
-    <div x-show="totalPages > 1" class="flex justify-between items-center mt-4 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div class="text-sm text-gray-700 dark:text-gray-300">
-            Showing <span x-text="((currentPage - 1) * perPage) + 1"></span> to 
-            <span x-text="Math.min(currentPage * perPage, totalResults)"></span> of 
-            <span x-text="totalResults"></span> results
-        </div>
-        <div class="flex space-x-2">
-            <button @click="previousPage()" 
-                    :disabled="currentPage === 1"
-                    :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
-                    class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm">
-                Previous
-            </button>
-            <button @click="nextPage()" 
-                    :disabled="currentPage === totalPages"
-                    :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
-                    class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm">
-                Next
-            </button>
+                    <div class="space-y-3">
+                        <p class="text-lg text-neutral-700 dark:text-neutral-300 font-medium">{{ trust_quadrant.description }}</p>
+                        <p class="text-neutral-600 dark:text-neutral-400">{{ trust_quadrant.recommendation }}</p>
+                    </div>
+                    
+                    <!-- Trust Scale Indicator -->
+                    <div class="bg-neutral-50 dark:bg-neutral-700/50 rounded-xl p-4">
+                        <h4 class="font-semibold text-neutral-900 dark:text-white mb-3">Trust Scale Guide</h4>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="flex items-center gap-2 {{ 'font-bold text-success-600 dark:text-success-400' if trust_quadrant.score >= 76 else 'text-neutral-600 dark:text-neutral-400' }}">
+                                <div class="w-3 h-3 rounded-full bg-success-500"></div>
+                                <span>76-100: 🏆 Must Buy</span>
+                            </div>
+                            <div class="flex items-center gap-2 {{ 'font-bold text-primary-600 dark:text-primary-400' if 51 <= trust_quadrant.score < 76 else 'text-neutral-600 dark:text-neutral-400' }}">
+                                <div class="w-3 h-3 rounded-full bg-primary-500"></div>
+                                <span>51-75: ✅ Can Buy</span>
+                            </div>
+                            <div class="flex items-center gap-2 {{ 'font-bold text-warning-600 dark:text-warning-400' if 26 <= trust_quadrant.score < 51 else 'text-neutral-600 dark:text-neutral-400' }}">
+                                <div class="w-3 h-3 rounded-full bg-warning-500"></div>
+                                <span>26-50: ⚠️ Buy at Own Risk</span>
+                            </div>
+                            <div class="flex items-center gap-2 {{ 'font-bold text-danger-600 dark:text-danger-400' if trust_quadrant.score < 26 else 'text-neutral-600 dark:text-neutral-400' }}">
+                                <div class="w-3 h-3 rounded-full bg-danger-500"></div>
+                                <span>0-25: ❌ Don't Buy</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Charts -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold mb-4">Review Classification</h3>
-        <canvas id="overviewChart"></canvas>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold mb-4">Confidence Distribution</h3>
-        <canvas id="confidenceChart"></canvas>
+<!-- Search & Filter Controls -->
+<div class="mb-6 animate-fade-in-up" style="animation-delay: 0.6s;">
+    <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg p-6" x-data="reviewTable()">
+        <div class="flex flex-col lg:flex-row gap-4 items-center">
+            <!-- Search Input -->
+            <div class="relative flex-1 w-full lg:w-auto">
+                <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400"></i>
+                <input type="text" 
+                       placeholder="Search reviews..." 
+                       class="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-700/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                       x-model="search" 
+                       @input="searchReviews()">
+            </div>
+            
+            <!-- Filter Buttons -->
+            <div class="flex gap-2">
+                <button class="filter-btn px-4 py-3 rounded-xl transition-all font-medium" 
+                        :class="filter === 'all' ? 'bg-primary-500 text-white shadow-lg' : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'" 
+                        @click="setFilter('all')">
+                    All ({{ total_reviews }})
+                </button>
+                <button class="filter-btn px-4 py-3 rounded-xl transition-all font-medium" 
+                        :class="filter === 'fake' ? 'bg-danger-500 text-white shadow-lg' : 'bg-red-100 dark:bg-danger-500/20 text-danger-700 dark:text-danger-300 hover:bg-red-200 dark:hover:bg-danger-500/30'" 
+                        @click="setFilter('fake')">
+                    Suspicious ({{ suspicious_count }})
+                </button>
+                <button class="filter-btn px-4 py-3 rounded-xl transition-all font-medium" 
+                        :class="filter === 'genuine' ? 'bg-success-500 text-white shadow-lg' : 'bg-green-100 dark:bg-success-500/20 text-success-700 dark:text-success-300 hover:bg-green-200 dark:hover:bg-success-500/30'" 
+                        @click="setFilter('genuine')">
+                    Genuine ({{ genuine_count }})
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Results Table -->
+<div class="animate-fade-in-up" style="animation-delay: 0.7s;">
+    <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg overflow-hidden" x-data="reviewTable()">
+        <!-- Loading State -->
+        <div x-show="loading" class="p-12 text-center">
+            <div class="inline-flex items-center gap-3">
+                <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-neutral-600 dark:text-neutral-400">Loading reviews...</span>
+            </div>
+        </div>
+        
+        <!-- Table Content -->
+        <div x-show="!loading" class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-neutral-50 dark:bg-neutral-700/50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Review Text</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Prediction</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Confidence</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Reason</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-200 dark:divide-neutral-700" id="review-table-body">
+                    {% for result in results %}
+                    <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-semibold text-sm">
+                                    {{ result.user[0]|upper if result.user else 'U' }}
+                                </div>
+                                <span class="font-medium text-neutral-900 dark:text-white">{{ result.user }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 max-w-xs">
+                            <div class="truncate text-neutral-900 dark:text-white" title="{{ result.full_text }}">
+                                {{ result.text }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
+                            {{ result.timestamp }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if 'Fake' in result.prediction %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-danger-100 text-danger-800 dark:bg-danger-900 dark:text-danger-200 border border-danger-200 dark:border-danger-800">
+                                    <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                                    {{ result.prediction }}
+                                </span>
+                            {% elif 'Genuine' in result.prediction %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200 border border-success-200 dark:border-success-800">
+                                    <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                    {{ result.prediction }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800">
+                                    <i data-lucide="help-circle" class="w-3 h-3"></i>
+                                    {{ result.prediction }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-2 max-w-20">
+                                    <div class="h-2 rounded-full transition-all duration-300" 
+                                         style="width: {{ result.confidence }}%; background: linear-gradient(90deg, {% if result.confidence > 80 %}#10B981{% elif result.confidence > 60 %}#F59E0B{% else %}#EF4444{% endif %}, {% if result.confidence > 80 %}#059669{% elif result.confidence > 60 %}#D97706{% else %}#DC2626{% endif %});">
+                                    </div>
+                                </div>
+                                <span class="text-sm font-medium text-neutral-900 dark:text-white min-w-[3rem]">{{ result.confidence }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 max-w-xs">
+                            <div class="truncate text-sm text-neutral-600 dark:text-neutral-400" title="{{ result.reason }}">
+                                {{ result.reason }}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Empty State -->
+        <div x-show="currentReviews.length === 0 && !loading" class="p-12 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center">
+                <i data-lucide="search-x" class="w-8 h-8 text-neutral-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">No reviews found</h3>
+            <p class="text-neutral-600 dark:text-neutral-400">Try adjusting your search or filter criteria.</p>
+        </div>
+        
+        <!-- Pagination -->
+        <div x-show="totalPages > 1" class="px-6 py-4 bg-neutral-50 dark:bg-neutral-700/50 border-t border-neutral-200 dark:border-neutral-700">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-neutral-600 dark:text-neutral-400">
+                    Showing <span x-text="((currentPage - 1) * perPage) + 1"></span> to 
+                    <span x-text="Math.min(currentPage * perPage, totalResults)"></span> of 
+                    <span x-text="totalResults"></span> results
+                </div>
+                <div class="flex items-center gap-2">
+                    <button @click="prevPage()" 
+                            :disabled="currentPage === 1"
+                            class="px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <span class="px-3 py-2 text-sm font-medium text-neutral-900 dark:text-white">
+                        Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span>
+                    </span>
+                    <button @click="nextPage()" 
+                            :disabled="currentPage === totalPages"
+                            class="px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="mb-8 animate-fade-in-up" style="animation-delay: 0.8s;">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Classification Chart -->
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-5 h-5 text-primary-500"></i>
+                Review Classification
+            </h3>
+            <div class="h-64">
+                <canvas id="classificationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Confidence Distribution Chart -->
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+                <i data-lucide="bar-chart-3" class="w-5 h-5 text-accent-500"></i>
+                Confidence Distribution
+            </h3>
+            <div class="h-64">
+                <canvas id="confidenceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeline Chart (if data available) -->
 {% if timeline_data %}
-<div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6 animate-fade-in">
-    <h3 class="text-lg font-semibold mb-4">Timeline Analysis</h3>
-    <canvas id="timelineChart"></canvas>
+<div class="mb-8 animate-fade-in-up" style="animation-delay: 0.9s;">
+    <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-5 h-5 text-success-500"></i>
+            Timeline Analysis
+        </h3>
+        <div class="h-64">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
 </div>
 {% endif %}
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Explanation Modal -->
+<div x-data="{ showExplanation: false, selectedReview: null }" 
+     x-show="showExplanation" 
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+     @click.self="showExplanation = false">
+    <div x-show="showExplanation"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div class="p-6 border-b border-neutral-200 dark:border-neutral-700">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-neutral-900 dark:text-white">Model Explanation</h3>
+                <button @click="showExplanation = false" class="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+        <div class="p-6" x-show="selectedReview">
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold text-neutral-900 dark:text-white mb-2">Review Text</h4>
+                    <p class="text-neutral-600 dark:text-neutral-400" x-text="selectedReview?.text"></p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-neutral-900 dark:text-white mb-2">Prediction</h4>
+                    <div class="flex items-center gap-2">
+                        <span x-text="selectedReview?.prediction" class="font-medium"></span>
+                        <span class="text-sm text-neutral-500">(<span x-text="selectedReview?.confidence"></span>% confidence)</span>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-neutral-900 dark:text-white mb-2">Key Factors</h4>
+                    <p class="text-neutral-600 dark:text-neutral-400" x-text="selectedReview?.reason"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Alpine.js table logic
+// Review table functionality
 function reviewTable() {
     return {
         search: '',
         filter: 'all',
-        currentReviews: {{ results | tojson }},
         currentPage: 1,
-        perPage: 50,
-        totalResults: {{ total_reviews }},
-        totalPages: 1,
+        perPage: 10,
         loading: false,
+        currentReviews: [],
+        totalResults: 0,
+        totalPages: 0,
         
         init() {
-            this.updatePagination();
-        },
-        
-        setFilter(newFilter) {
-            this.filter = newFilter;
-            this.currentPage = 1;
-            this.loadReviews();
-        },
-        
-        searchReviews() {
-            this.currentPage = 1;
             this.loadReviews();
         },
         
         loadReviews() {
             this.loading = true;
-            const params = new URLSearchParams({
-                page: this.currentPage,
-                per_page: this.perPage,
-                filter: this.filter,
-                search: this.search
-            });
-            
-            fetch(`/api/reviews?${params}`)
-                .then(response => response.json())
-                .then(data => {
-                    this.currentReviews = data.reviews;
-                    this.totalResults = data.total;
-                    this.totalPages = data.total_pages;
-                    this.loading = false;
-                    this.updateTable();
-                })
-                .catch(error => {
-                    console.error('Error loading reviews:', error);
-                    this.loading = false;
-                });
+            // Simulate loading
+            setTimeout(() => {
+                this.currentReviews = Array.from(document.querySelectorAll('#review-table-body tr'));
+                this.totalResults = this.currentReviews.length;
+                this.totalPages = Math.ceil(this.totalResults / this.perPage);
+                this.loading = false;
+            }, 500);
         },
         
-        updateTable() {
-            const tbody = document.getElementById('review-table-body');
-            tbody.innerHTML = this.currentReviews.map(result => `
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                        ${result.user}
-                    </td>
-                    <td class="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
-                        <div class="truncate" title="${result.full_text}">
-                            ${result.text}
-                        </div>
-                    </td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        ${result.timestamp}
-                    </td>
-                    <td class="px-4 py-4 whitespace-nowrap">
-                        ${this.getPredictionBadge(result.prediction)}
-                    </td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        <div class="flex items-center">
-                            <div class="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700 mr-2">
-                                <div class="h-2 rounded-full" 
-                                     style="width: ${result.confidence}%; background-color: ${this.getConfidenceColor(result.confidence)};">
-                                </div>
-                            </div>
-                            <span class="text-xs">${result.confidence}%</span>
-                        </div>
-                    </td>
-                    <td class="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs">
-                        <div class="truncate" title="${result.reason}">
-                            ${result.reason}
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+        searchReviews() {
+            // Implement search functionality
+            console.log('Searching for:', this.search);
         },
         
-        getPredictionBadge(prediction) {
-            if (prediction.includes('Fake')) {
-                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">🚨 ${prediction}</span>`;
-            } else if (prediction.includes('Genuine')) {
-                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✅ ${prediction}</span>`;
-            } else {
-                return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">❓ ${prediction}</span>`;
-            }
+        setFilter(filter) {
+            this.filter = filter;
+            this.currentPage = 1;
+            // Implement filter functionality
+            console.log('Filtering by:', filter);
         },
         
-        getConfidenceColor(confidence) {
-            if (confidence > 80) return '#10B981';
-            if (confidence > 60) return '#F59E0B';
-            return '#EF4444';
-        },
-        
-        updatePagination() {
-            this.totalPages = Math.ceil(this.totalResults / this.perPage);
-        },
-        
-        previousPage() {
+        prevPage() {
             if (this.currentPage > 1) {
                 this.currentPage--;
-                this.loadReviews();
             }
         },
         
         nextPage() {
             if (this.currentPage < this.totalPages) {
                 this.currentPage++;
-                this.loadReviews();
             }
         }
     }
 }
 
-// Load and render charts
+// Initialize tooltips and other interactive elements
 document.addEventListener('DOMContentLoaded', function() {
-    fetch('/api/chart-data')
-        .then(response => response.json())
-        .then(data => {
-            // Overview Chart
-            const overviewCtx = document.getElementById('overviewChart').getContext('2d');
-            new Chart(overviewCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.overview.labels,
-                    datasets: [{
-                        data: data.overview.data,
-                        backgroundColor: data.overview.backgroundColor
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-            
-            // Confidence Distribution Chart
-            const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
-            new Chart(confidenceCtx, {
-                type: 'bar',
-                data: {
-                    labels: data.confidence_distribution.labels,
-                    datasets: [{
-                        label: 'Number of Reviews',
-                        data: data.confidence_distribution.data,
-                        backgroundColor: '#3B82F6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-            
-            // Timeline Chart (if data available)
-            if (data.timeline.labels.length > 0) {
-                const timelineCtx = document.getElementById('timelineChart').getContext('2d');
-                new Chart(timelineCtx, {
-                    type: 'line',
-                    data: {
-                        labels: data.timeline.labels,
-                        datasets: [{
-                            label: 'Genuine Reviews',
-                            data: data.timeline.genuine_data,
-                            borderColor: '#10B981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)'
-                        }, {
-                            label: 'Suspicious Reviews',
-                            data: data.timeline.fake_data,
-                            borderColor: '#EF4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
-        })
-        .catch(error => console.error('Error loading chart data:', error));
+    // Add click handlers for explanation modal
+    document.querySelectorAll('[data-explanation]').forEach(button => {
+        button.addEventListener('click', function() {
+            const reviewData = JSON.parse(this.dataset.explanation);
+            Alpine.store('selectedReview', reviewData);
+            Alpine.store('showExplanation', true);
+        });
+    });
+
+    // Initialize charts
+    initializeCharts();
 });
+
+// Chart initialization function
+function initializeCharts() {
+    // Classification Chart Data
+    const classificationData = {
+        labels: ['Genuine', 'Suspicious'],
+        values: [{{ genuine_count }}, {{ suspicious_count }}]
+    };
+
+    // Confidence Distribution Data (example - you can modify based on your data)
+    const confidenceRanges = ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'];
+    const confidenceData = {
+        labels: confidenceRanges,
+        values: [5, 12, 25, 35, 23] // Example data - replace with actual confidence distribution
+    };
+
+    // Create charts
+    if (window.ChartUtils) {
+        // Classification Chart
+        const classificationChart = window.ChartUtils.createClassificationChart('classificationChart', classificationData);
+        if (classificationChart) {
+            window.ChartUtils.animateChart(classificationChart, 200);
+        }
+
+        // Confidence Chart
+        const confidenceChart = window.ChartUtils.createConfidenceChart('confidenceChart', confidenceData);
+        if (confidenceChart) {
+            window.ChartUtils.animateChart(confidenceChart, 400);
+        }
+
+        // Timeline Chart (if data available)
+        {% if timeline_data %}
+        const timelineData = {
+            labels: {{ timeline_data.labels | tojson }},
+            genuine: {{ timeline_data.genuine_data | tojson }},
+            suspicious: {{ timeline_data.fake_data | tojson }}
+        };
+        const timelineChart = window.ChartUtils.createTimelineChart('timelineChart', timelineData);
+        if (timelineChart) {
+            window.ChartUtils.animateChart(timelineChart, 600);
+        }
+        {% endif %}
+    } else {
+        // Fallback chart creation if ChartUtils is not available
+        createFallbackCharts();
+    }
+}
+
+// Fallback chart creation
+function createFallbackCharts() {
+    // Classification Chart
+    const classificationCtx = document.getElementById('classificationChart');
+    if (classificationCtx) {
+        new Chart(classificationCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Genuine', 'Suspicious'],
+                datasets: [{
+                    data: [{{ genuine_count }}, {{ suspicious_count }}],
+                    backgroundColor: ['#22c55e', '#ef4444'],
+                    borderColor: '#ffffff',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Confidence Chart
+    const confidenceCtx = document.getElementById('confidenceChart');
+    if (confidenceCtx) {
+        new Chart(confidenceCtx, {
+            type: 'bar',
+            data: {
+                labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+                datasets: [{
+                    label: 'Number of Reviews',
+                    data: [5, 12, 25, 35, 23],
+                    backgroundColor: '#0ea5e9'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+}
 </script>
 
-<style>
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: none; }
-}
-.animate-fade-in { animation: fade-in 1s cubic-bezier(.4,0,.2,1) both; }
-</style>
-
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 {% endblock %} 
