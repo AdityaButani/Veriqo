@@ -1,0 +1,21 @@
+Flask
+pandas
+scikit-learn
+joblib
+numpy
+seaborn
+matplotlib
+werkzeug
+tailwindcss
+chart.js
+# New dependencies for Amazon Review Analyzer
+google-generativeai==0.3.2
+python-dotenv==1.0.0
+requests==2.31.0
+beautifulsoup4==4.12.2
+# YouTube Expert Review Analyzer
+youtube-transcript-api==0.6.2
+# Advanced ML Model Dependencies
+nltk==3.8.1
+textstat==0.7.3
+textblob==0.17.1 
