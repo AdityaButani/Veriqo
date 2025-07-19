@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Sign Up - VeriQo{% endblock %}
+{% block title %}Sign In - VeriQo{% endblock %}
 
 {% block content %}
 <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -14,10 +14,10 @@
             <!-- Header -->
             <div class="text-center mb-8">
                 <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 shadow-lg mb-4">
-                    <i data-lucide="user-plus" class="w-8 h-8 text-white"></i>
+                    <i data-lucide="log-in" class="w-8 h-8 text-white"></i>
                 </div>
-                <h2 class="text-3xl font-bold gradient-text mb-2">Create Account</h2>
-                <p class="text-neutral-600 dark:text-neutral-400">Join VeriQo to unlock powerful AI analysis tools</p>
+                <h2 class="text-3xl font-bold gradient-text mb-2">Welcome Back</h2>
+                <p class="text-neutral-600 dark:text-neutral-400">Sign in to your VeriQo account</p>
             </div>
 
             <!-- Flash Messages -->
@@ -53,12 +53,12 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- Sign Up Form -->
-            <form action="{{ url_for('signup') }}" method="post" class="space-y-6" x-data="{ showPassword: false, showConfirmPassword: false, loading: false }" @submit="loading = true">
-                <!-- Username Field -->
+            <!-- Login Form -->
+            <form action="{{ url_for('login') }}" method="post" class="space-y-6" x-data="{ showPassword: false, loading: false }" @submit="loading = true">
+                <!-- Username/Email Field -->
                 <div>
                     <label for="username" class="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
-                        Username
+                        Username or Email
                     </label>
                     <div class="relative">
                         <i data-lucide="user" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400"></i>
@@ -66,23 +66,7 @@
                                name="username" 
                                id="username" 
                                required 
-                               placeholder="Enter your username"
-                               class="w-full pl-10 pr-4 py-3 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-neutral-50 dark:bg-neutral-700/50 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 transition-all">
-                    </div>
-                </div>
-
-                <!-- Email Field -->
-                <div>
-                    <label for="email" class="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
-                        Email Address
-                    </label>
-                    <div class="relative">
-                        <i data-lucide="mail" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400"></i>
-                        <input type="email" 
-                               name="email" 
-                               id="email" 
-                               required 
-                               placeholder="Enter your email"
+                               placeholder="Enter your username or email"
                                class="w-full pl-10 pr-4 py-3 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-neutral-50 dark:bg-neutral-700/50 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 transition-all">
                     </div>
                 </div>
@@ -98,7 +82,7 @@
                                name="password" 
                                id="password" 
                                required 
-                               placeholder="Create a strong password"
+                               placeholder="Enter your password"
                                class="w-full pl-10 pr-12 py-3 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-neutral-50 dark:bg-neutral-700/50 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 transition-all">
                         <button type="button" 
                                 @click="showPassword = !showPassword" 
@@ -109,41 +93,20 @@
                     </div>
                 </div>
 
-                <!-- Confirm Password Field -->
-                <div>
-                    <label for="confirm_password" class="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
-                        Confirm Password
-                    </label>
-                    <div class="relative">
-                        <i data-lucide="lock" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400"></i>
-                        <input :type="showConfirmPassword ? 'text' : 'password'" 
-                               name="confirm_password" 
-                               id="confirm_password" 
-                               required 
-                               placeholder="Confirm your password"
-                               class="w-full pl-10 pr-12 py-3 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-neutral-50 dark:bg-neutral-700/50 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 transition-all">
-                        <button type="button" 
-                                @click="showConfirmPassword = !showConfirmPassword" 
-                                class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
-                            <i data-lucide="eye" x-show="!showConfirmPassword" class="w-5 h-5 text-neutral-400"></i>
-                            <i data-lucide="eye-off" x-show="showConfirmPassword" class="w-5 h-5 text-neutral-400"></i>
-                        </button>
+                <!-- Remember Me & Forgot Password -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" 
+                               id="remember" 
+                               name="remember"
+                               class="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-500 focus:ring-primary-500">
+                        <label for="remember" class="text-sm text-neutral-600 dark:text-neutral-400">
+                            Remember me
+                        </label>
                     </div>
-                </div>
-
-                <!-- Terms and Conditions -->
-                <div class="flex items-start gap-3">
-                    <input type="checkbox" 
-                           id="terms" 
-                           name="terms" 
-                           required
-                           class="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-500 focus:ring-primary-500 mt-1">
-                    <label for="terms" class="text-sm text-neutral-600 dark:text-neutral-400">
-                        I agree to the 
-                        <a href="#" class="text-primary-600 dark:text-primary-400 hover:underline font-medium">Terms of Service</a> 
-                        and 
-                        <a href="#" class="text-primary-600 dark:text-primary-400 hover:underline font-medium">Privacy Policy</a>
-                    </label>
+                    <a href="#" class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium hover:underline transition-colors">
+                        Forgot password?
+                    </a>
                 </div>
 
                 <!-- Submit Button -->
@@ -151,8 +114,8 @@
                         class="w-full bg-gradient-to-r from-primary-500 to-accent-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-600 hover:to-accent-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
                         :disabled="loading">
                     <i data-lucide="loader-2" x-show="loading" class="w-5 h-5 animate-spin"></i>
-                    <i data-lucide="user-plus" x-show="!loading" class="w-5 h-5"></i>
-                    <span x-text="loading ? 'Creating Account...' : 'Create Account'"></span>
+                    <i data-lucide="log-in" x-show="!loading" class="w-5 h-5"></i>
+                    <span x-text="loading ? 'Signing In...' : 'Sign In'"></span>
                 </button>
             </form>
 
@@ -167,15 +130,15 @@
             <button type="button" 
                     class="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 shadow-sm hover:shadow-md transition-all duration-300 group">
                 <i data-lucide="chrome" class="w-5 h-5 text-neutral-600 dark:text-neutral-400 group-hover:text-primary-600"></i>
-                <span class="font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white">Sign up with Google</span>
+                <span class="font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white">Sign in with Google</span>
             </button>
 
-            <!-- Login Link -->
+            <!-- Sign Up Link -->
             <div class="mt-8 text-center">
                 <p class="text-neutral-600 dark:text-neutral-400">
-                    Already have an account? 
-                    <a href="{{ url_for('login') }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold hover:underline transition-colors">
-                        Sign in here
+                    Don't have an account? 
+                    <a href="{{ url_for('signup') }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold hover:underline transition-colors">
+                        Sign up here
                     </a>
                 </p>
             </div>
