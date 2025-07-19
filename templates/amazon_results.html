@@ -4,9 +4,11 @@
     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
         <div>
             <h2 class="text-2xl font-semibold">Amazon Product Analysis</h2>
+            <h3 class="text-xl font-medium text-primary dark:text-accent mb-2">
+                {{ analysis.product_name }}
+            </h3>
             <p class="text-gray-600 dark:text-gray-400 text-sm">
-                Analysis for {{ product_title or 'Amazon Product' }}
-                {% if asin %} (ASIN: {{ asin }}){% endif %}
+                ASIN: {{ analysis.asin }} • Analyzed: {{ analysis.timestamp }}
             </p>
         </div>
         <div class="flex gap-2">
@@ -106,11 +108,12 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rating</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Classification</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Confidence</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Explanation</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sentiment</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="reviews-table-body">
-                    {% for review in reviews %}
+                    {% for review in analysis.all_reviews %}
                     <tr class="review-row hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" 
                         data-classification="{{ review.prediction }}" 
                         data-sentiment="{{ review.sentiment }}">
@@ -157,6 +160,32 @@
                                 <span class="text-sm text-gray-900 dark:text-gray-100">{{ review.confidence }}%</span>
                             </div>
                         </td>
+                        <td class="px-6 py-4">
+                            <div class="max-w-sm">
+                                <div class="flex items-start gap-2">
+                                    <div class="flex-shrink-0 mt-1">
+                                        {% if 'Fake' in review.prediction %}
+                                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                                </svg>
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                                            {{ review.explanation or "No explanation available" }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if review.sentiment == 'positive' %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -178,9 +207,65 @@
             </table>
         </div>
     </div>
-</div>
+        </div>
 
-<!-- Charts Section -->
+        <!-- Trust Score Quadrant -->
+        <div class="mb-8">
+            <div class="stats-card rounded-xl p-6">
+                <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Trust Score & Buying Recommendation</h3>
+                <div class="flex flex-col lg:flex-row items-center gap-6">
+                    <!-- Quadrant Badge -->
+                    <div class="flex-shrink-0">
+                        <div class="relative">
+                            <div class="w-32 h-32 rounded-full {{ analysis.trust_quadrant.bg_color }} {{ analysis.trust_quadrant.border_color }} border-4 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold {{ analysis.trust_quadrant.text_color }}">{{ analysis.trust_quadrant.score }}%</div>
+                                    <div class="text-sm {{ analysis.trust_quadrant.text_color }} font-medium">Trust Score</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recommendation Details -->
+                    <div class="flex-1">
+                        <div class="mb-3">
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-lg font-bold {{ analysis.trust_quadrant.bg_color }} {{ analysis.trust_quadrant.text_color }} {{ analysis.trust_quadrant.border_color }} border-2">
+                                {{ analysis.trust_quadrant.quadrant }}
+                            </span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 mb-2 font-medium">{{ analysis.trust_quadrant.description }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ analysis.trust_quadrant.recommendation }}</p>
+                    </div>
+                    
+                    <!-- Quadrant Scale Indicator -->
+                    <div class="flex-shrink-0">
+                        <div class="text-center">
+                            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trust Scale</div>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex items-center gap-2 {{ 'font-bold' if analysis.trust_quadrant.score >= 76 else '' }}">
+                                    <div class="w-3 h-3 rounded bg-green-500"></div>
+                                    <span>76-100: 🏆 Must Buy</span>
+                                </div>
+                                <div class="flex items-center gap-2 {{ 'font-bold' if 51 <= analysis.trust_quadrant.score < 76 else '' }}">
+                                    <div class="w-3 h-3 rounded bg-blue-500"></div>
+                                    <span>51-75: ✅ Can Buy</span>
+                                </div>
+                                <div class="flex items-center gap-2 {{ 'font-bold' if 26 <= analysis.trust_quadrant.score < 51 else '' }}">
+                                    <div class="w-3 h-3 rounded bg-yellow-500"></div>
+                                    <span>26-50: ⚠️ Buy at Own Risk</span>
+                                </div>
+                                <div class="flex items-center gap-2 {{ 'font-bold' if analysis.trust_quadrant.score < 26 else '' }}">
+                                    <div class="w-3 h-3 rounded bg-red-500"></div>
+                                    <span>0-25: ❌ Don't Buy</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 animate-fade-in">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold mb-4">Review Distribution</h3>
