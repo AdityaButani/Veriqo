@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Content Analysis - VeriQo{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Page Header -->
+    <div class="text-center mb-12 animate-fade-in-up">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 shadow-xl mb-6">
+            <i data-lucide="youtube" class="w-12 h-12 text-white"></i>
+        </div>
+        <h1 class="text-4xl lg:text-5xl font-bold gradient-text mb-4">
+            YouTube Expert Review Analyzer
+        </h1>
+        <p class="text-xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto">
+            Search for professional tech reviews from trusted YouTubers like MKBHD, Unbox Therapy, and more. Get AI-powered analysis of video transcripts with expert verdicts, pros, cons, and comprehensive product specifications.
+        </p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-8 space-y-3">
+                {% for category, message in messages %}
+                    <div class="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-4 border-l-4 
+                                {% if category == 'success' %}border-success-500 bg-success-50 dark:bg-success-900/20{% endif %}
+                                {% if category == 'error' %}border-danger-500 bg-danger-50 dark:bg-danger-900/20{% endif %}
+                                {% if category == 'info' %}border-primary-500 bg-primary-50 dark:bg-primary-900/20{% endif %}"
+                         x-data="{ show: true }" 
+                         x-show="show" 
+                         x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform scale-95"
+                         x-transition:enter-end="opacity-100 transform scale-100"
+                         x-transition:leave="transition ease-in duration-200"
+                         x-transition:leave-start="opacity-100 transform scale-100"
+                         x-transition:leave-end="opacity-0 transform scale-95">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="{% if category == 'success' %}check-circle{% elif category == 'error' %}x-circle{% else %}info{% endif %}" 
+                                   class="w-5 h-5 {% if category == 'success' %}text-success-600{% elif category == 'error' %}text-danger-600{% else %}text-primary-600{% endif %}"></i>
+                                <span class="text-neutral-900 dark:text-white">{{ message }}</span>
+                            </div>
+                            <button @click="show = false" class="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all">
+                                <i data-lucide="x" class="w-4 h-4 text-neutral-500"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Search Form -->
+    <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg p-8 mb-12 animate-fade-in-up" style="animation-delay: 0.1s;">
+        <form action="{{ url_for('analyze_youtube_reviews') }}" method="POST" class="space-y-6" x-data="{ loading: false }" @submit="loading = true">
+            <div>
+                <label for="product_query" class="block text-lg font-semibold text-neutral-900 dark:text-white mb-3">
+                    Product or Device Name
+                </label>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400"></i>
+                    <input 
+                        type="text" 
+                        id="product_query" 
+                        name="product_query" 
+                        required
+                        placeholder="iPhone 15 Pro Max, MacBook Air M2, Tesla Model 3, etc."
+                        class="w-full pl-10 pr-4 py-4 text-lg border border-neutral-200 dark:border-neutral-700 rounded-xl 
+                               bg-neutral-50 dark:bg-neutral-700/50 text-neutral-900 dark:text-white 
+                               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent 
+                               placeholder-neutral-500 dark:placeholder-neutral-400 transition-all"
+                    >
+                </div>
+                <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    Enter any tech product name. We'll search for reviews from trusted experts.
+                </p>
+            </div>
+
+            <button 
+                type="submit" 
+                class="w-full bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold py-4 px-8 rounded-xl 
+                       shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300
+                       focus:outline-none focus:ring-4 focus:ring-primary-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                :disabled="loading"
+            >
+                <div class="flex items-center justify-center gap-3">
+                    <i data-lucide="loader-2" x-show="loading" class="w-6 h-6 animate-spin"></i>
+                    <i data-lucide="search" x-show="!loading" class="w-6 h-6"></i>
+                    <span x-text="loading ? 'Searching Reviews...' : 'Search Expert Reviews'"></span>
+                </div>
+            </button>
+        </form>
+    </div>
+
+    <!-- Trusted Reviewers Section -->
+    <div class="mb-12 animate-fade-in-up" style="animation-delay: 0.2s;">
+        <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6 text-center">Trusted Tech Reviewers</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-lg">M</span>
+                </div>
+                <h3 class="font-semibold text-sm text-neutral-900 dark:text-white">MKBHD</h3>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Marques Brownlee</p>
+            </div>
+            
+            <div class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-lg">U</span>
+                </div>
+                <h3 class="font-semibold text-sm text-neutral-900 dark:text-white">Unbox Therapy</h3>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Lewis Hilsenteger</p>
+            </div>
+            
+            <div class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-lg">L</span>
+                </div>
+                <h3 class="font-semibold text-sm text-neutral-900 dark:text-white">Linus Tech Tips</h3>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Linus Sebastian</p>
+            </div>
+            
+            <div class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-lg">A</span>
+                </div>
+                <h3 class="font-semibold text-sm text-neutral-900 dark:text-white">Mrwhosetheboss</h3>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Arun Maini</p>
+            </div>
+            
+            <div class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-lg">A</span>
+                </div>
+                <h3 class="font-semibold text-sm text-neutral-900 dark:text-white">Austin Evans</h3>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Tech Reviews</p>
+            </div>
+            
+            <div class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-neutral-500 to-neutral-600 flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-lg">+</span>
+                </div>
+                <h3 class="font-semibold text-sm text-neutral-900 dark:text-white">And More...</h3>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">16+ Trusted Sources</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="grid md:grid-cols-3 gap-8 mb-12 animate-fade-in-up" style="animation-delay: 0.3s;">
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl p-6 text-center shadow-lg">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white mb-4 shadow-lg">
+                <i data-lucide="eye" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Comprehensive Analysis</h3>
+            <p class="text-neutral-600 dark:text-neutral-400">AI analyzes video transcripts from trusted tech reviewers for detailed insights including specifications, performance metrics, and build quality</p>
+        </div>
+
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl p-6 text-center shadow-lg">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-accent-500 to-accent-600 text-white mb-4 shadow-lg">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Trusted Sources</h3>
+            <p class="text-neutral-600 dark:text-neutral-400">We only analyze reviews from verified tech experts and professional reviewers with proven track records</p>
+        </div>
+
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl p-6 text-center shadow-lg">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-success-500 to-success-600 text-white mb-4 shadow-lg">
+                <i data-lucide="zap" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Instant Results</h3>
+            <p class="text-neutral-600 dark:text-neutral-400">Get detailed analysis reports within seconds, including pros, cons, specifications, and buying recommendations</p>
+        </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <div class="bg-gradient-to-r from-primary-50 to-accent-50 dark:from-primary-900/20 dark:to-accent-900/20 border border-primary-200 dark:border-primary-800 rounded-2xl p-8 animate-fade-in-up" style="animation-delay: 0.4s;">
+        <h2 class="text-2xl font-bold text-primary-900 dark:text-primary-200 mb-6 text-center">How It Works</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="flex items-start gap-4">
+                <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+                <div>
+                    <h3 class="font-semibold text-primary-900 dark:text-primary-200 mb-2">Search & Discover</h3>
+                    <p class="text-primary-800 dark:text-primary-300 text-sm">Enter any tech product name and we'll find relevant expert reviews from trusted YouTubers</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-4">
+                <div class="w-8 h-8 bg-gradient-to-br from-accent-500 to-accent-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+                <div>
+                    <h3 class="font-semibold text-primary-900 dark:text-primary-200 mb-2">AI Analysis</h3>
+                    <p class="text-primary-800 dark:text-primary-300 text-sm">Our AI processes video transcripts to extract key insights, specifications, and expert opinions</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-4">
+                <div class="w-8 h-8 bg-gradient-to-br from-success-500 to-success-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+                <div>
+                    <h3 class="font-semibold text-primary-900 dark:text-primary-200 mb-2">Get Insights</h3>
+                    <p class="text-primary-800 dark:text-primary-300 text-sm">Receive comprehensive reports with pros, cons, specifications, and buying recommendations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sample Searches -->
+    <div class="mt-12 animate-fade-in-up" style="animation-delay: 0.5s;">
+        <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-6 text-center">Popular Searches</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button onclick="fillSample('iPhone 15 Pro Max')" 
+                    class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
+                <i data-lucide="smartphone" class="w-8 h-8 mx-auto mb-2 text-primary-500 group-hover:text-primary-600"></i>
+                <div class="font-semibold text-neutral-900 dark:text-white group-hover:text-primary-600">iPhone 15 Pro Max</div>
+            </button>
+            <button onclick="fillSample('MacBook Air M2')" 
+                    class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
+                <i data-lucide="laptop" class="w-8 h-8 mx-auto mb-2 text-accent-500 group-hover:text-accent-600"></i>
+                <div class="font-semibold text-neutral-900 dark:text-white group-hover:text-accent-600">MacBook Air M2</div>
+            </button>
+            <button onclick="fillSample('Tesla Model 3')" 
+                    class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
+                <i data-lucide="car" class="w-8 h-8 mx-auto mb-2 text-success-500 group-hover:text-success-600"></i>
+                <div class="font-semibold text-neutral-900 dark:text-white group-hover:text-success-600">Tesla Model 3</div>
+            </button>
+            <button onclick="fillSample('Sony WH-1000XM5')" 
+                    class="bg-white dark:bg-neutral-800 rounded-xl p-4 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
+                <i data-lucide="headphones" class="w-8 h-8 mx-auto mb-2 text-purple-500 group-hover:text-purple-600"></i>
+                <div class="font-semibold text-neutral-900 dark:text-white group-hover:text-purple-600">Sony WH-1000XM5</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillSample(product) {
+    document.getElementById('product_query').value = product;
+    // Add visual feedback
+    const input = document.getElementById('product_query');
+    input.focus();
+    input.classList.add('ring-2', 'ring-primary-500');
+    setTimeout(() => {
+        input.classList.remove('ring-2', 'ring-primary-500');
+    }, 2000);
+}
+</script>
+{% endblock %} 
